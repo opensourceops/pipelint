@@ -1,0 +1,99 @@
+pipeline:
+  identifier: complex_pipeline
+  name: Complex CI/CD Pipeline
+  variables:
+    - name: NODE_VERSION
+      value: "20"
+  stages:
+    - stage:
+        identifier: build
+        name: Build
+        type: CI
+        spec:
+          infrastructure:
+            type: KubernetesDirect
+            spec:
+              os: Linux
+              resources:
+                cpu: "1"
+                memory: 2Gi
+          caching:
+            enabled: true
+            key: npm-cache
+            paths:
+              - node_modules
+          execution:
+            steps:
+              - step:
+                  identifier: install
+                  name: Install Dependencies
+                  type: Run
+                  spec:
+                    image: node:20-alpine
+                    command: npm ci
+              - step:
+                  identifier: build
+                  name: Build
+                  type: Run
+                  spec:
+                    image: node:20-alpine
+                    command: npm run build
+                  timeout: 10m
+    - parallel:
+        - stage:
+            identifier: lint
+            name: Lint
+            type: CI
+            spec:
+              infrastructure:
+                type: KubernetesDirect
+                spec:
+                  os: Linux
+              execution:
+                steps:
+                  - step:
+                      identifier: lint
+                      name: Run Linting
+                      type: Run
+                      spec:
+                        image: node:20-alpine
+                        command: npm run lint
+        - stage:
+            identifier: test
+            name: Test
+            type: CI
+            spec:
+              infrastructure:
+                type: KubernetesDirect
+                spec:
+                  os: Linux
+              execution:
+                steps:
+                  - step:
+                      identifier: test
+                      name: Run Tests
+                      type: Run
+                      spec:
+                        image: node:20-alpine
+                        command: npm test
+    - stage:
+        identifier: docker
+        name: Build Docker Image
+        type: CI
+        spec:
+          infrastructure:
+            type: KubernetesDirect
+            spec:
+              os: Linux
+          execution:
+            steps:
+              - step:
+                  identifier: docker_build
+                  name: Build Image
+                  type: Plugin
+                  spec:
+                    type: docker
+                    image: plugins/docker
+                    with:
+                      repo: myrepo/myapp
+                      tags: latest

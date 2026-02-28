@@ -1,0 +1,47 @@
+pipeline:
+  identifier: simple_pipeline
+  name: Simple CI Pipeline
+  stages:
+    - stage:
+        identifier: build
+        name: Build
+        type: CI
+        spec:
+          infrastructure:
+            type: KubernetesDirect
+            spec:
+              os: Linux
+          execution:
+            steps:
+              - step:
+                  identifier: install
+                  name: Install Dependencies
+                  type: Run
+                  spec:
+                    image: node:20-alpine
+                    command: npm ci
+              - step:
+                  identifier: build
+                  name: Build
+                  type: Run
+                  spec:
+                    image: node:20-alpine
+                    command: npm run build
+    - stage:
+        identifier: test
+        name: Test
+        type: CI
+        spec:
+          infrastructure:
+            type: KubernetesDirect
+            spec:
+              os: Linux
+          execution:
+            steps:
+              - step:
+                  identifier: test
+                  name: Run Tests
+                  type: Run
+                  spec:
+                    image: node:20-alpine
+                    command: npm test
