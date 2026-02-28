@@ -1,3 +1,38 @@
+feat: Add integration tests and documentation
+
+Tasks 12 & 13: Integration Tests + README - Complete
+
+## What was done:
+- Integration tests (15 tests):
+  - Full analysis flow tests
+  - Reporter integration tests
+  - Edge case tests
+  - CLI command tests
+- Comprehensive README:
+  - Features, installation, quick start
+  - CLI command reference
+  - Rules documentation
+  - AI integration guide
+  - Development instructions
+  - Project structure
+
+## Files created:
+- tests/test_integration.py (15 tests)
+
+## Files modified:
+- README.md (comprehensive docs)
+
+## Verification:
+- pytest: 85 tests passed
+- Coverage: 87%
+
+## MVP COMPLETE! 🎉
+All 13 tasks finished.
+
+---
+
+## PREVIOUS COMMITS:
+
 feat: Add CLI and all reporters
 
 Tasks 9, 10, 11: CLI + Reporters - Complete
