@@ -1,32 +1,25 @@
-feat: Add remaining analysis rules (8 total)
+feat: Add Claude AI integration
 
-Task 7: Best Practice, Security, Redundancy, Resource Rules - Complete
+Task 8: AI Integration - Complete
 
 ## What was done:
-- Implemented MissingTimeoutRule:
-  - Detects jobs without timeout configuration
-- Implemented RedundantCloneRule:
-  - Detects multiple git clone operations across stages
-- Implemented PinnedVersionsRule:
-  - Detects unpinned image tags (latest, main, etc.)
-  - Detects missing plugin versions
-- Implemented ResourceSizingRule:
-  - Detects heavy operations without resource limits
-- All 8 MVP rules now implemented!
+- Created ClaudeService for AI-powered suggestions:
+  - explain_finding(): Detailed explanation of findings
+  - generate_suggestions(): Overall pipeline improvement suggestions
+  - generate_fix(): Generate YAML fixes for findings
+  - is_available(): Check if API key is configured
+- Uses Claude 3 Haiku for fast, cost-effective suggestions
+- Graceful handling when API key not available
 
 ## Files created:
-- src/pipelineiq/analyzers/rules/best_practices.py
-- src/pipelineiq/analyzers/rules/redundancy.py
-- src/pipelineiq/analyzers/rules/security.py
-- src/pipelineiq/analyzers/rules/resource.py
+- src/pipelineiq/ai/claude.py (ClaudeService)
+- tests/test_ai.py (8 tests)
 
 ## Files modified:
-- src/pipelineiq/analyzers/__init__.py (exports)
-- src/pipelineiq/core/engine.py (all 8 rules)
-- tests/test_analyzers.py (updated expectations)
+- src/pipelineiq/ai/__init__.py (exports)
 
 ## Verification:
-- pytest: 20 analyzer tests passed
-- All 8 rules working
+- pytest: 8 AI tests passed
+- ClaudeService coverage: 93%
 
-Next: Task 8 - AI integration (Claude service)
+Next: Task 9 - CLI with Typer
