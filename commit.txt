@@ -1,32 +1,28 @@
-feat: Add Harness YAML parser
+feat: Add DAG builder with NetworkX
 
-Task 3: Harness YAML Parser - Complete
+Task 4: DAG Builder - Complete
 
 ## What was done:
-- Created PipelineParser base class with abstract parse() method
-- Implemented HarnessParser for Harness CI pipelines:
-  - Parses stages (sequential and parallel)
-  - Parses jobs with runner configuration
-  - Parses steps (Run, Plugin, Background, Action types)
-  - Handles caching configuration
-  - Handles timeout parsing (10m, 1h, 30s formats)
-  - Handles pipeline and stage variables
-  - Infers sequential dependencies between stages
-- Added get_parser() factory function
-- Created ParseError for error handling
+- Created PipelineDAG class using NetworkX DiGraph
+- Implemented key methods:
+  - get_critical_path(): finds longest execution path
+  - get_independent_stages(): root nodes (no dependencies)
+  - get_parallelizable_groups(): stages that can run together
+  - get_bottlenecks(): stages with many dependents
+  - get_stage_depth(): distance from root
+  - get_dependents/get_dependencies(): graph traversal
+  - to_dict(): serialization for JSON output
 
 ## Files created:
-- src/pipelineiq/parsers/base.py (PipelineParser, ParseError)
-- src/pipelineiq/parsers/harness.py (HarnessParser)
-- tests/fixtures/harness/simple.yaml (test fixture)
-- tests/fixtures/harness/complex.yaml (parallel stages, plugins)
-- tests/test_parsers.py (15 tests)
+- src/pipelineiq/core/dag.py (PipelineDAG)
+- tests/test_dag.py (16 tests)
 
 ## Files modified:
-- src/pipelineiq/parsers/__init__.py (exports)
+- src/pipelineiq/core/__init__.py (exports)
 
 ## Verification:
-- pytest: 26 tests passed (15 new)
-- Coverage: 82%
+- pytest: 42 tests passed (16 new)
+- DAG coverage: 91%
 
-Next: Task 4 - DAG builder
+Next: Task 5 - Analysis engine + cache-dependencies rule
+
