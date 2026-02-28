@@ -1,3 +1,42 @@
+feat: Add CLI and all reporters
+
+Tasks 9, 10, 11: CLI + Reporters - Complete
+
+## What was done:
+- Full CLI with Typer:
+  - analyze: Main command with --platform (required), --format, --severity, --rules, --ai, --output
+  - list-rules: Show all available rules
+  - explain: Explain a specific rule
+  - version: Show version info
+- Terminal Reporter (Rich):
+  - Beautiful panels, tables, colored output
+  - Score visualization, findings table, suggestions
+- JSON Reporter:
+  - Full structured output for CI integration
+- Markdown Reporter:
+  - Documentation-friendly output with tables and badges
+- Upgraded Typer to 0.24.1 for Python 3.14 compatibility
+
+## Files created:
+- src/pipelineiq/reporters/terminal.py
+- src/pipelineiq/reporters/json_reporter.py
+- src/pipelineiq/reporters/markdown.py
+
+## Files modified:
+- src/pipelineiq/cli/main.py (full implementation)
+- src/pipelineiq/reporters/__init__.py (exports)
+- pyproject.toml (typer upgrade)
+
+## Verification:
+- pytest: 70 tests passed
+- CLI working: pipelineiq analyze --platform harness
+
+Next: Task 12 - Integration tests
+
+---
+
+## PREVIOUS COMMITS:
+
 feat: Add Claude AI integration
 
 Task 8: AI Integration - Complete
