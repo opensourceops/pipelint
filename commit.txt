@@ -1,27 +1,32 @@
-feat: Add parallelization rules
+feat: Add remaining analysis rules (8 total)
 
-Task 6: Parallelization Rules - Complete
+Task 7: Best Practice, Security, Redundancy, Resource Rules - Complete
 
 ## What was done:
-- Implemented ParallelStagesRule:
-  - Uses DAG to find independent stages
-  - Detects sequential stages that could run in parallel
-- Implemented ParallelStepsRule:
-  - Detects independent steps (lint/test/security patterns)
-  - Suggests step grouping for parallel execution
-- Added rules to default engine rule set
+- Implemented MissingTimeoutRule:
+  - Detects jobs without timeout configuration
+- Implemented RedundantCloneRule:
+  - Detects multiple git clone operations across stages
+- Implemented PinnedVersionsRule:
+  - Detects unpinned image tags (latest, main, etc.)
+  - Detects missing plugin versions
+- Implemented ResourceSizingRule:
+  - Detects heavy operations without resource limits
+- All 8 MVP rules now implemented!
 
 ## Files created:
-- src/pipelineiq/analyzers/rules/parallelization.py
+- src/pipelineiq/analyzers/rules/best_practices.py
+- src/pipelineiq/analyzers/rules/redundancy.py
+- src/pipelineiq/analyzers/rules/security.py
+- src/pipelineiq/analyzers/rules/resource.py
 
 ## Files modified:
 - src/pipelineiq/analyzers/__init__.py (exports)
-- src/pipelineiq/core/engine.py (default rules)
-- tests/test_analyzers.py (+5 tests)
+- src/pipelineiq/core/engine.py (all 8 rules)
+- tests/test_analyzers.py (updated expectations)
 
 ## Verification:
 - pytest: 20 analyzer tests passed
-- Parallelization rules: 100% coverage
+- All 8 rules working
 
-Next: Task 7 - More rules (timeout, redundant-clone, pinned-versions, resource)
-
+Next: Task 8 - AI integration (Claude service)
