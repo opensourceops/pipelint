@@ -1,6 +1,6 @@
 """Main CLI application."""
 
-from enum import Enum
+import logging
 from pathlib import Path
 from typing import Optional
 
@@ -11,6 +11,8 @@ from rich.console import Console
 from pipelineiq import __version__
 from pipelineiq.models import Platform, Severity
 
+logger = logging.getLogger(__name__)
+
 app = typer.Typer(
     name="pipelineiq",
     help="AI-powered CI pipeline analyzer",
@@ -18,13 +20,6 @@ app = typer.Typer(
 )
 
 console = Console()
-
-
-class OutputFormat(str, Enum):
-    """Output format options."""
-    TERMINAL = "terminal"
-    JSON = "json"
-    MARKDOWN = "markdown"
 
 
 @app.callback()
@@ -136,8 +131,11 @@ def analyze(
                 else:
                     rprint("[yellow]Warning: ANTHROPIC_API_KEY not set, skipping AI suggestions[/yellow]")
             except Exception as e:
+                rprint(f"[yellow]Warning: AI suggestions failed: {e}[/yellow]")
+                logger.warning(f"AI suggestions failed: {e}")
                 if verbose:
-                    rprint(f"[yellow]AI error: {e}[/yellow]")
+                    import traceback
+                    traceback.print_exc()
         
         # Output results
         format_lower = format.lower()

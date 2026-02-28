@@ -26,6 +26,7 @@ class PipelineDAG:
         """
         self.pipeline = pipeline
         self.graph: nx.DiGraph = nx.DiGraph()
+        self._depth_cache: dict[str, int] = {}
         self._build_graph()
     
     def _build_graph(self) -> None:
@@ -118,30 +119,42 @@ class PipelineDAG:
         """Get depth of a stage from root.
         
         Depth is the longest path from any root to this stage.
+        Uses cached topological depths for O(1) lookup after first call.
         
         Args:
             stage_id: Stage ID to get depth for
             
         Returns:
-            Depth (0 for root nodes)
+            Depth (0 for root nodes), -1 if stage not found
         """
         if stage_id not in self.graph:
             return -1
         
-        roots = self.get_independent_stages()
-        if stage_id in roots:
-            return 0
+        # Build cache if empty
+        if not self._depth_cache:
+            self._compute_depths()
         
-        max_depth = 0
-        for root in roots:
-            try:
-                paths = list(nx.all_simple_paths(self.graph, root, stage_id))
-                for path in paths:
-                    max_depth = max(max_depth, len(path) - 1)
-            except nx.NetworkXNoPath:
-                continue
+        return self._depth_cache.get(stage_id, -1)
+    
+    def _compute_depths(self) -> None:
+        """Compute depths for all nodes using BFS from roots. O(V+E) complexity."""
+        if not self.graph.nodes():
+            return
         
-        return max_depth
+        # Initialize depths
+        for node in self.graph.nodes():
+            self._depth_cache[node] = 0
+        
+        # Use topological sort to compute max depth from any root
+        try:
+            for node in nx.topological_sort(self.graph):
+                predecessors = list(self.graph.predecessors(node))
+                if predecessors:
+                    self._depth_cache[node] = max(
+                        self._depth_cache[pred] + 1 for pred in predecessors
+                    )
+        except nx.NetworkXError:
+            pass  # Graph has cycles or is empty
     
     def get_dependents(self, stage_id: str) -> list[str]:
         """Get stages that depend on the given stage.

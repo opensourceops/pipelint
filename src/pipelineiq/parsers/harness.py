@@ -141,7 +141,7 @@ class HarnessParser(PipelineParser):
     def _parse_step(self, step_data: dict) -> Step:
         """Parse single Harness step."""
         step_type_str = step_data.get("type", "Run")
-        spec = step_data.get("spec", {})
+        spec = step_data.get("spec") or {}
         
         # Determine step type
         step_type = StepType.RUN
@@ -167,6 +167,20 @@ class HarnessParser(PipelineParser):
             step_type = StepType.ACTION
             plugin = spec.get("uses")
         
+        # Safely extract condition from 'when' block
+        when_block = step_data.get("when")
+        condition = when_block.get("condition") if isinstance(when_block, dict) else None
+        
+        # Safely extract continue_on_error from failureStrategies
+        continue_on_error = False
+        failure_strategies = step_data.get("failureStrategies")
+        if failure_strategies and isinstance(failure_strategies, list) and len(failure_strategies) > 0:
+            first_strategy = failure_strategies[0]
+            if isinstance(first_strategy, dict):
+                on_failure = first_strategy.get("onFailure")
+                if isinstance(on_failure, dict):
+                    continue_on_error = on_failure.get("action") == "Ignore"
+        
         return Step(
             id=step_data.get("identifier", str(uuid4())),
             name=step_data.get("name", "Unnamed Step"),
@@ -175,11 +189,11 @@ class HarnessParser(PipelineParser):
             plugin=plugin,
             plugin_version=plugin_version,
             image=image,
-            inputs=spec.get("with", {}),
-            environment=spec.get("envVariables", {}),
-            condition=step_data.get("when", {}).get("condition") if isinstance(step_data.get("when"), dict) else None,
+            inputs=spec.get("with") or {},
+            environment=spec.get("envVariables") or {},
+            condition=condition,
             timeout_minutes=self._parse_timeout(step_data.get("timeout")),
-            continue_on_error=step_data.get("failureStrategies", [{}])[0].get("onFailure", {}).get("action") == "Ignore" if step_data.get("failureStrategies") else False,
+            continue_on_error=continue_on_error,
         )
     
     def _parse_infrastructure(self, infra_data: dict) -> RunnerConfig:

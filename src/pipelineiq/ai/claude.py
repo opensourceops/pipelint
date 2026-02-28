@@ -1,5 +1,6 @@
 """Claude AI service for intelligent suggestions."""
 
+import logging
 import os
 from typing import Any
 
@@ -7,19 +8,24 @@ from anthropic import Anthropic
 
 from pipelineiq.models import AnalysisResult, Finding, Pipeline
 
+logger = logging.getLogger(__name__)
+
 
 class ClaudeService:
     """Service for generating AI-powered suggestions using Claude."""
     
     MODEL = "claude-3-haiku-20240307"  # Fast, cost-effective for suggestions
+    DEFAULT_TIMEOUT = 30.0  # seconds
     
-    def __init__(self, api_key: str | None = None):
+    def __init__(self, api_key: str | None = None, timeout: float | None = None):
         """Initialize Claude service.
         
         Args:
             api_key: Anthropic API key. If not provided, uses ANTHROPIC_API_KEY env var.
+            timeout: Request timeout in seconds. Defaults to 30s.
         """
         self.api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
+        self.timeout = timeout or self.DEFAULT_TIMEOUT
         self._client: Anthropic | None = None
     
     @property
@@ -53,6 +59,7 @@ class ClaudeService:
         response = self.client.messages.create(
             model=self.MODEL,
             max_tokens=500,
+            timeout=self.timeout,
             messages=[{"role": "user", "content": prompt}],
         )
         
@@ -72,9 +79,11 @@ class ClaudeService:
         
         prompt = self._build_suggestions_prompt(result)
         
+        logger.debug(f"Generating suggestions for {len(result.findings)} findings")
         response = self.client.messages.create(
             model=self.MODEL,
             max_tokens=800,
+            timeout=self.timeout,
             messages=[{"role": "user", "content": prompt}],
         )
         
@@ -115,10 +124,12 @@ Provide ONLY the corrected YAML snippet for the affected section. No explanation
             response = self.client.messages.create(
                 model=self.MODEL,
                 max_tokens=500,
+                timeout=self.timeout,
                 messages=[{"role": "user", "content": prompt}],
             )
             return response.content[0].text.strip()
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Failed to generate fix: {e}")
             return None
     
     def _build_finding_prompt(self, finding: Finding, context: str | None) -> str:

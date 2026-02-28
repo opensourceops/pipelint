@@ -1,99 +1,27 @@
-feat: Add integration tests and documentation
+fix: Address code review findings (P0-P2)
 
-Tasks 12 & 13: Integration Tests + README - Complete
+Principal Engineer Review Fixes - Complete
 
-## What was done:
-- Integration tests (15 tests):
-  - Full analysis flow tests
-  - Reporter integration tests
-  - Edge case tests
-  - CLI command tests
-- Comprehensive README:
-  - Features, installation, quick start
-  - CLI command reference
-  - Rules documentation
-  - AI integration guide
-  - Development instructions
-  - Project structure
+## P0 - Critical:
+- Fix silent AI error handling in CLI - always show warnings
+- Add defensive guards to parser - prevent crashes on malformed YAML
 
-## Files created:
-- tests/test_integration.py (15 tests)
+## P1 - Important:
+- Remove dead OutputFormat enum from CLI
+- Fix mutable default in AnalysisRule base class (use ClassVar)
+- Add timeout configuration to all AI API calls (30s default)
+
+## P2 - Improvements:
+- Optimize DAG depth calculation from O(n³) to O(V+E)
+- Add structured logging throughout (logger.warning, logger.debug)
 
 ## Files modified:
-- README.md (comprehensive docs)
+- src/pipelineiq/cli/main.py
+- src/pipelineiq/parsers/harness.py
+- src/pipelineiq/analyzers/base.py
+- src/pipelineiq/ai/claude.py
+- src/pipelineiq/core/dag.py
 
 ## Verification:
 - pytest: 85 tests passed
 - Coverage: 87%
-
-## MVP COMPLETE! 🎉
-All 13 tasks finished.
-
----
-
-## PREVIOUS COMMITS:
-
-feat: Add CLI and all reporters
-
-Tasks 9, 10, 11: CLI + Reporters - Complete
-
-## What was done:
-- Full CLI with Typer:
-  - analyze: Main command with --platform (required), --format, --severity, --rules, --ai, --output
-  - list-rules: Show all available rules
-  - explain: Explain a specific rule
-  - version: Show version info
-- Terminal Reporter (Rich):
-  - Beautiful panels, tables, colored output
-  - Score visualization, findings table, suggestions
-- JSON Reporter:
-  - Full structured output for CI integration
-- Markdown Reporter:
-  - Documentation-friendly output with tables and badges
-- Upgraded Typer to 0.24.1 for Python 3.14 compatibility
-
-## Files created:
-- src/pipelineiq/reporters/terminal.py
-- src/pipelineiq/reporters/json_reporter.py
-- src/pipelineiq/reporters/markdown.py
-
-## Files modified:
-- src/pipelineiq/cli/main.py (full implementation)
-- src/pipelineiq/reporters/__init__.py (exports)
-- pyproject.toml (typer upgrade)
-
-## Verification:
-- pytest: 70 tests passed
-- CLI working: pipelineiq analyze --platform harness
-
-Next: Task 12 - Integration tests
-
----
-
-## PREVIOUS COMMITS:
-
-feat: Add Claude AI integration
-
-Task 8: AI Integration - Complete
-
-## What was done:
-- Created ClaudeService for AI-powered suggestions:
-  - explain_finding(): Detailed explanation of findings
-  - generate_suggestions(): Overall pipeline improvement suggestions
-  - generate_fix(): Generate YAML fixes for findings
-  - is_available(): Check if API key is configured
-- Uses Claude 3 Haiku for fast, cost-effective suggestions
-- Graceful handling when API key not available
-
-## Files created:
-- src/pipelineiq/ai/claude.py (ClaudeService)
-- tests/test_ai.py (8 tests)
-
-## Files modified:
-- src/pipelineiq/ai/__init__.py (exports)
-
-## Verification:
-- pytest: 8 AI tests passed
-- ClaudeService coverage: 93%
-
-Next: Task 9 - CLI with Typer

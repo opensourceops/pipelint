@@ -1,6 +1,7 @@
 """Base analysis rule interface."""
 
 from abc import ABC, abstractmethod
+from typing import ClassVar
 from uuid import uuid4
 
 from pipelineiq.core.dag import PipelineDAG
@@ -14,13 +15,13 @@ class AnalysisRule(ABC):
     in CI pipelines.
     """
     
-    id: str
-    name: str
-    description: str
-    category: Category
-    severity: Severity
-    platforms: list[Platform] = [Platform.HARNESS]  # Supported platforms
-    enabled: bool = True
+    id: ClassVar[str]
+    name: ClassVar[str]
+    description: ClassVar[str]
+    category: ClassVar[Category]
+    severity: ClassVar[Severity]
+    platforms: ClassVar[list[Platform]] = [Platform.HARNESS]  # Supported platforms
+    enabled: ClassVar[bool] = True
     
     @abstractmethod
     def analyze(self, pipeline: Pipeline, dag: PipelineDAG) -> list[Finding]:
