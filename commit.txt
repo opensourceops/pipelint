@@ -1,28 +1,28 @@
-feat: Add DAG builder with NetworkX
+feat: Add analysis engine and caching rules
 
-Task 4: DAG Builder - Complete
+Task 5: Analysis Engine + Cache Rules - Complete
 
 ## What was done:
-- Created PipelineDAG class using NetworkX DiGraph
-- Implemented key methods:
-  - get_critical_path(): finds longest execution path
-  - get_independent_stages(): root nodes (no dependencies)
-  - get_parallelizable_groups(): stages that can run together
-  - get_bottlenecks(): stages with many dependents
-  - get_stage_depth(): distance from root
-  - get_dependents/get_dependencies(): graph traversal
-  - to_dict(): serialization for JSON output
+- Created AnalysisRule base class with abstract analyze() method
+- Implemented AnalysisEngine to orchestrate rule execution:
+  - Runs enabled rules against pipeline
+  - Calculates health score (100 - penalties)
+  - Groups findings by severity and category
+  - Estimates time savings
+- Implemented CacheDependenciesRule:
+  - Detects npm/pip/maven/go/bundler install without cache
+  - Supports 11 package manager patterns
+- Implemented CacheDockerLayersRule:
+  - Detects docker build without --cache-from or BuildKit
 
 ## Files created:
-- src/pipelineiq/core/dag.py (PipelineDAG)
-- tests/test_dag.py (16 tests)
-
-## Files modified:
-- src/pipelineiq/core/__init__.py (exports)
+- src/pipelineiq/analyzers/base.py (AnalysisRule)
+- src/pipelineiq/analyzers/rules/caching.py (2 rules)
+- src/pipelineiq/core/engine.py (AnalysisEngine)
+- tests/test_analyzers.py (15 tests)
 
 ## Verification:
-- pytest: 42 tests passed (16 new)
-- DAG coverage: 91%
+- pytest: 57 tests passed (15 new)
+- Engine coverage: 92%
 
-Next: Task 5 - Analysis engine + cache-dependencies rule
-
+Next: Task 6 - More rules (parallel-stages, parallel-steps)
