@@ -1,28 +1,27 @@
-feat: Add analysis engine and caching rules
+feat: Add parallelization rules
 
-Task 5: Analysis Engine + Cache Rules - Complete
+Task 6: Parallelization Rules - Complete
 
 ## What was done:
-- Created AnalysisRule base class with abstract analyze() method
-- Implemented AnalysisEngine to orchestrate rule execution:
-  - Runs enabled rules against pipeline
-  - Calculates health score (100 - penalties)
-  - Groups findings by severity and category
-  - Estimates time savings
-- Implemented CacheDependenciesRule:
-  - Detects npm/pip/maven/go/bundler install without cache
-  - Supports 11 package manager patterns
-- Implemented CacheDockerLayersRule:
-  - Detects docker build without --cache-from or BuildKit
+- Implemented ParallelStagesRule:
+  - Uses DAG to find independent stages
+  - Detects sequential stages that could run in parallel
+- Implemented ParallelStepsRule:
+  - Detects independent steps (lint/test/security patterns)
+  - Suggests step grouping for parallel execution
+- Added rules to default engine rule set
 
 ## Files created:
-- src/pipelineiq/analyzers/base.py (AnalysisRule)
-- src/pipelineiq/analyzers/rules/caching.py (2 rules)
-- src/pipelineiq/core/engine.py (AnalysisEngine)
-- tests/test_analyzers.py (15 tests)
+- src/pipelineiq/analyzers/rules/parallelization.py
+
+## Files modified:
+- src/pipelineiq/analyzers/__init__.py (exports)
+- src/pipelineiq/core/engine.py (default rules)
+- tests/test_analyzers.py (+5 tests)
 
 ## Verification:
-- pytest: 57 tests passed (15 new)
-- Engine coverage: 92%
+- pytest: 20 analyzer tests passed
+- Parallelization rules: 100% coverage
 
-Next: Task 6 - More rules (parallel-stages, parallel-steps)
+Next: Task 7 - More rules (timeout, redundant-clone, pinned-versions, resource)
+

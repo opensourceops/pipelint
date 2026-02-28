@@ -2,7 +2,12 @@
 
 import pytest
 
-from pipelineiq.analyzers import CacheDependenciesRule, CacheDockerLayersRule
+from pipelineiq.analyzers import (
+    CacheDependenciesRule,
+    CacheDockerLayersRule,
+    ParallelStagesRule,
+    ParallelStepsRule,
+)
 from pipelineiq.core import AnalysisEngine, PipelineDAG
 from pipelineiq.models import (
     Category,
@@ -229,6 +234,136 @@ class TestCacheDockerLayersRule:
                                     type=StepType.RUN,
                                     command="docker build --cache-from myapp:latest -t myapp .",
                                 ),
+                            ],
+                        )
+                    ],
+                )
+            ],
+        )
+        dag = PipelineDAG(pipeline)
+        findings = rule.analyze(pipeline, dag)
+
+        assert len(findings) == 0
+
+
+class TestParallelStagesRule:
+    """Tests for ParallelStagesRule."""
+
+    @pytest.fixture
+    def rule(self):
+        return ParallelStagesRule()
+
+    def test_detects_sequential_independent_stages(self, rule):
+        """Test detecting independent stages running sequentially."""
+        pipeline = Pipeline(
+            id="test",
+            name="Test",
+            platform=Platform.HARNESS,
+            file_path="test.yaml",
+            stages=[
+                Stage(id="build", name="Build", dependencies=[], parallel=False, jobs=[]),
+                Stage(id="lint", name="Lint", dependencies=[], parallel=False, jobs=[]),
+                Stage(id="test", name="Test", dependencies=[], parallel=False, jobs=[]),
+            ],
+        )
+        dag = PipelineDAG(pipeline)
+        findings = rule.analyze(pipeline, dag)
+
+        assert len(findings) == 1
+        assert findings[0].rule_id == "parallel-stages"
+        assert findings[0].severity == Severity.HIGH
+
+    def test_no_finding_when_parallel(self, rule):
+        """Test no finding when stages are parallel."""
+        pipeline = Pipeline(
+            id="test",
+            name="Test",
+            platform=Platform.HARNESS,
+            file_path="test.yaml",
+            stages=[
+                Stage(id="lint", name="Lint", dependencies=[], parallel=True, jobs=[]),
+                Stage(id="test", name="Test", dependencies=[], parallel=True, jobs=[]),
+            ],
+        )
+        dag = PipelineDAG(pipeline)
+        findings = rule.analyze(pipeline, dag)
+
+        assert len(findings) == 0
+
+    def test_no_finding_with_dependencies(self, rule):
+        """Test no finding when stages have dependencies."""
+        pipeline = Pipeline(
+            id="test",
+            name="Test",
+            platform=Platform.HARNESS,
+            file_path="test.yaml",
+            stages=[
+                Stage(id="build", name="Build", dependencies=[], jobs=[]),
+                Stage(id="test", name="Test", dependencies=["build"], jobs=[]),
+            ],
+        )
+        dag = PipelineDAG(pipeline)
+        findings = rule.analyze(pipeline, dag)
+
+        assert len(findings) == 0
+
+
+class TestParallelStepsRule:
+    """Tests for ParallelStepsRule."""
+
+    @pytest.fixture
+    def rule(self):
+        return ParallelStepsRule()
+
+    def test_detects_independent_steps(self, rule):
+        """Test detecting independent steps."""
+        pipeline = Pipeline(
+            id="test",
+            name="Test",
+            platform=Platform.HARNESS,
+            file_path="test.yaml",
+            stages=[
+                Stage(
+                    id="build",
+                    name="Build",
+                    jobs=[
+                        Job(
+                            id="job1",
+                            name="Job 1",
+                            runner=RunnerConfig(type="kubernetes"),
+                            steps=[
+                                Step(id="s1", name="Run Lint", type=StepType.RUN, command="npm run lint"),
+                                Step(id="s2", name="Run Tests", type=StepType.RUN, command="npm test"),
+                            ],
+                        )
+                    ],
+                )
+            ],
+        )
+        dag = PipelineDAG(pipeline)
+        findings = rule.analyze(pipeline, dag)
+
+        assert len(findings) == 1
+        assert findings[0].rule_id == "parallel-steps"
+
+    def test_no_finding_single_step(self, rule):
+        """Test no finding with single step."""
+        pipeline = Pipeline(
+            id="test",
+            name="Test",
+            platform=Platform.HARNESS,
+            file_path="test.yaml",
+            stages=[
+                Stage(
+                    id="build",
+                    name="Build",
+                    jobs=[
+                        Job(
+                            id="job1",
+                            name="Job 1",
+                            runner=RunnerConfig(type="kubernetes"),
+                            steps=[
+                                Step(id="s1", name="Build", type=StepType.RUN, command="npm build"),
                             ],
                         )
                     ],

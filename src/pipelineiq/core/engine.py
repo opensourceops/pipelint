@@ -6,6 +6,7 @@ from typing import Type
 from pipelineiq import __version__
 from pipelineiq.analyzers.base import AnalysisRule
 from pipelineiq.analyzers.rules.caching import CacheDependenciesRule, CacheDockerLayersRule
+from pipelineiq.analyzers.rules.parallelization import ParallelStagesRule, ParallelStepsRule
 from pipelineiq.core.dag import PipelineDAG
 from pipelineiq.models import (
     AnalysisResult,
@@ -36,6 +37,8 @@ class AnalysisEngine:
         return [
             CacheDependenciesRule(),
             CacheDockerLayersRule(),
+            ParallelStagesRule(),
+            ParallelStepsRule(),
         ]
     
     def analyze(
