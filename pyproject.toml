@@ -1,0 +1,46 @@
+[tool.poetry]
+name = "pipelineiq"
+version = "0.1.0"
+description = "AI-powered CI pipeline analyzer - identify inefficiencies and optimize your pipelines"
+authors = ["Abhay"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "pipelineiq", from = "src"}]
+
+[tool.poetry.scripts]
+pipelineiq = "pipelineiq.cli.main:app"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+typer = {extras = ["all"], version = "^0.9.0"}
+rich = "^13.7.0"
+pyyaml = "^6.0.1"
+pydantic = "^2.6.0"
+networkx = "^3.2.1"
+anthropic = "^0.18.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+pytest-cov = "^4.1.0"
+ruff = "^0.2.0"
+mypy = "^1.8.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --cov=pipelineiq --cov-report=term-missing"
