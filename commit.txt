@@ -1,3 +1,42 @@
+feat: Add core data models with Pydantic
+
+Task 2: Core Data Models - Complete
+
+## What was done:
+- Created Pipeline IR (Intermediate Representation) models:
+  - Pipeline: root container with stages, triggers, variables
+  - Stage: pipeline stage with dependencies, jobs
+  - Job: execution unit with runner config and steps
+  - Step: individual command/plugin execution
+  - Supporting: Platform, StepType, RunnerConfig, ResourceSpec, CacheConfig, Trigger
+
+- Created Finding models for analysis results:
+  - Finding: analysis issue with severity, category, location
+  - Severity: CRITICAL, HIGH, MEDIUM, LOW, INFO
+  - Category: CACHING, PARALLELIZATION, SECURITY, BEST_PRACTICE, etc.
+  - Location: file/stage/job/step reference
+  - Fix: suggested code fix
+
+- Created Result models:
+  - AnalysisResult: complete analysis output
+  - AnalysisSummary: score and statistics
+
+## Files created:
+- src/pipelineiq/models/pipeline.py
+- src/pipelineiq/models/finding.py
+- src/pipelineiq/models/result.py
+- tests/test_models.py
+
+## Verification:
+- pytest: 11 tests passed
+- Coverage: 87%
+
+Next: Task 3 - Harness YAML parser
+
+---
+
+## PREVIOUS COMMITS:
+
 feat: Initialize PipelineIQ project structure and dependencies
 
 Task 1: Project Setup - Complete
