@@ -47,7 +47,7 @@ def analyze(
     platform: str = typer.Option(
         ...,
         "--platform", "-p",
-        help="CI platform: harness (required)",
+        help="CI platform: harness, github (required)",
     ),
     format: str = typer.Option(
         "terminal",
@@ -96,7 +96,7 @@ def analyze(
             platform_enum = Platform(platform.lower())
         except ValueError:
             rprint(f"[red]Invalid platform:[/red] {platform}")
-            rprint("Supported platforms: harness")
+            rprint("Supported platforms: harness, github")
             raise typer.Exit(code=1)
         
         # Validate severity if provided
