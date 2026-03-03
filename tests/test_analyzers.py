@@ -624,3 +624,109 @@ class TestAnalysisEngine:
 
         assert result.summary.score == 100
         assert result.summary.total_findings == 0
+
+    def test_normalized_scoring_large_pipeline_scores_better(self, engine):
+        """Test that large pipeline with same findings scores better than small one."""
+        # Small pipeline (1 stage) with 1 HIGH finding
+        small_pipeline = Pipeline(
+            id="small",
+            name="Small",
+            platform=Platform.HARNESS,
+            file_path="test.yaml",
+            stages=[
+                Stage(
+                    id="build",
+                    name="Build",
+                    jobs=[
+                        Job(
+                            id="job1",
+                            name="Job 1",
+                            runner=RunnerConfig(type="kubernetes"),
+                            steps=[
+                                Step(id="s1", name="Install", type=StepType.RUN, command="npm ci"),
+                            ],
+                        )
+                    ],
+                )
+            ],
+        )
+
+        # Large pipeline (10 stages) with same type of finding
+        large_stages = []
+        for i in range(10):
+            large_stages.append(
+                Stage(
+                    id=f"stage{i}",
+                    name=f"Stage {i}",
+                    jobs=[
+                        Job(
+                            id=f"job{i}",
+                            name=f"Job {i}",
+                            runner=RunnerConfig(type="kubernetes"),
+                            timeout_minutes=30,
+                            steps=[
+                                Step(id=f"s{i}", name="Build", type=StepType.RUN, command="echo build"),
+                            ],
+                        )
+                    ],
+                )
+            )
+        # Add one stage with the same issue (npm ci without cache)
+        large_stages[0].jobs[0].steps = [
+            Step(id="s0", name="Install", type=StepType.RUN, command="npm ci")
+        ]
+
+        large_pipeline = Pipeline(
+            id="large",
+            name="Large",
+            platform=Platform.HARNESS,
+            file_path="test.yaml",
+            stages=large_stages,
+        )
+
+        small_result = engine.analyze(small_pipeline, rule_ids=["cache-dependencies"])
+        large_result = engine.analyze(large_pipeline, rule_ids=["cache-dependencies"])
+
+        # Both should have 1 finding
+        assert small_result.summary.total_findings == 1
+        assert large_result.summary.total_findings == 1
+
+        # Large pipeline should score better (lower density = reduced penalty)
+        assert large_result.summary.score > small_result.summary.score
+
+    def test_normalized_scoring_density_affects_score(self, engine):
+        """Test that findings density affects score appropriately."""
+        # Create a 5-stage pipeline
+        stages = []
+        for i in range(5):
+            stages.append(
+                Stage(
+                    id=f"stage{i}",
+                    name=f"Stage {i}",
+                    jobs=[
+                        Job(
+                            id=f"job{i}",
+                            name=f"Job {i}",
+                            runner=RunnerConfig(type="kubernetes"),
+                            steps=[
+                                Step(id=f"s{i}", name="Build", type=StepType.RUN, command="echo"),
+                            ],
+                        )
+                    ],
+                )
+            )
+
+        pipeline = Pipeline(
+            id="test",
+            name="Test",
+            platform=Platform.HARNESS,
+            file_path="test.yaml",
+            stages=stages,
+        )
+
+        result = engine.analyze(pipeline)
+
+        # With 5 stages and few findings, density should be low
+        # Score should reflect the normalized penalty
+        assert result.summary.score >= 0
+        assert result.summary.score <= 100

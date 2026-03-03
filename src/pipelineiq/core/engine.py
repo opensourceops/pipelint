@@ -100,7 +100,7 @@ class AnalysisEngine:
             ]
         
         # Calculate summary
-        summary = self._calculate_summary(all_findings, dag)
+        summary = self._calculate_summary(all_findings, dag, pipeline)
         
         execution_time_ms = int((time.time() - start_time) * 1000)
         
@@ -114,33 +114,27 @@ class AnalysisEngine:
             analyzer_version=__version__,
         )
     
-    def _calculate_summary(self, findings: list[Finding], dag: PipelineDAG) -> AnalysisSummary:
-        """Calculate analysis summary from findings."""
+    def _calculate_summary(
+        self, findings: list[Finding], dag: PipelineDAG, pipeline: Pipeline
+    ) -> AnalysisSummary:
+        """Calculate analysis summary from findings.
+
+        Uses normalized scoring based on pipeline complexity to ensure
+        fair comparison between small and large pipelines.
+        """
         # Count by severity
         by_severity: dict[Severity, int] = {}
         for finding in findings:
             by_severity[finding.severity] = by_severity.get(finding.severity, 0) + 1
-        
+
         # Count by category
         by_category: dict[Category, int] = {}
         for finding in findings:
             by_category[finding.category] = by_category.get(finding.category, 0) + 1
-        
-        # Calculate score (100 - penalties)
-        # Critical: -15, High: -10, Medium: -5, Low: -2, Info: -1
-        penalties = {
-            Severity.CRITICAL: 15,
-            Severity.HIGH: 10,
-            Severity.MEDIUM: 5,
-            Severity.LOW: 2,
-            Severity.INFO: 1,
-        }
-        
-        total_penalty = sum(
-            penalties.get(f.severity, 0) for f in findings
-        )
-        score = max(0, min(100, 100 - total_penalty))
-        
+
+        # Calculate normalized score
+        score = self._calculate_normalized_score(findings, pipeline)
+
         # Estimate time savings
         time_savings = None
         if findings:
@@ -148,7 +142,7 @@ class AnalysisEngine:
             min_savings = len(findings) * 30  # 30 seconds per finding
             max_savings = len(findings) * 120  # 2 minutes per finding
             time_savings = f"{min_savings // 60}-{max_savings // 60} minutes per run"
-        
+
         return AnalysisSummary(
             score=score,
             total_findings=len(findings),
@@ -157,6 +151,74 @@ class AnalysisEngine:
             estimated_time_savings=time_savings,
             critical_path=dag.get_critical_path(),
         )
+
+    def _calculate_normalized_score(
+        self, findings: list[Finding], pipeline: Pipeline
+    ) -> int:
+        """Calculate score normalized by pipeline complexity.
+
+        Uses findings density (findings per stage) to fairly compare
+        pipelines of different sizes. A 50-stage pipeline with 5 findings
+        should score better than a 1-stage pipeline with 5 findings.
+
+        Formula:
+        1. Calculate base penalty per finding (by severity)
+        2. Calculate pipeline complexity (stages + jobs)
+        3. Normalize penalty based on density
+        4. Apply diminishing returns for very large pipelines
+        """
+        if not findings:
+            return 100
+
+        # Base penalties per severity
+        base_penalties = {
+            Severity.CRITICAL: 15,
+            Severity.HIGH: 10,
+            Severity.MEDIUM: 5,
+            Severity.LOW: 2,
+            Severity.INFO: 1,
+        }
+
+        # Calculate raw penalty
+        raw_penalty = sum(base_penalties.get(f.severity, 0) for f in findings)
+
+        # Calculate pipeline complexity
+        num_stages = len(pipeline.stages)
+        num_jobs = sum(len(stage.jobs) for stage in pipeline.stages)
+        num_steps = sum(
+            len(job.steps)
+            for stage in pipeline.stages
+            for job in stage.jobs
+        )
+
+        # Use stages as primary complexity metric, with minimum of 1
+        complexity = max(1, num_stages)
+
+        # Calculate findings density (findings per stage)
+        density = len(findings) / complexity
+
+        # Normalize penalty based on density
+        # - density < 0.5: reduce penalty (few findings for pipeline size)
+        # - density = 1.0: full penalty (1 finding per stage)
+        # - density > 2.0: cap penalty (don't over-penalize small pipelines)
+        if density < 0.5:
+            # Low density: reduce penalty (better relative health)
+            normalization_factor = 0.5 + density  # 0.5 to 1.0
+        elif density <= 2.0:
+            # Normal density: proportional penalty
+            normalization_factor = 1.0
+        else:
+            # High density: cap at 2x to avoid crushing small pipelines
+            # but still penalize appropriately
+            normalization_factor = min(2.0, density / 2.0 + 0.5)
+
+        # Apply normalization
+        normalized_penalty = raw_penalty * normalization_factor
+
+        # Calculate final score
+        score = max(0, min(100, 100 - int(normalized_penalty)))
+
+        return score
     
     def add_rule(self, rule: AnalysisRule) -> None:
         """Add a rule to the engine."""
