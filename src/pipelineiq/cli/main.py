@@ -69,6 +69,11 @@ def analyze(
         "--ai",
         help="Enable AI-powered suggestions (requires ANTHROPIC_API_KEY)",
     ),
+    fix: bool = typer.Option(
+        False,
+        "--fix",
+        help="Generate AI-powered YAML fixes for findings (requires ANTHROPIC_API_KEY)",
+    ),
     output: Optional[Path] = typer.Option(
         None,
         "--output", "-o",
@@ -133,6 +138,32 @@ def analyze(
             except Exception as e:
                 rprint(f"[yellow]Warning: AI suggestions failed: {e}[/yellow]")
                 logger.warning(f"AI suggestions failed: {e}")
+                if verbose:
+                    import traceback
+                    traceback.print_exc()
+
+        # Generate fixes if enabled
+        if fix:
+            try:
+                claude = ClaudeService()
+                if claude.is_available():
+                    if verbose:
+                        rprint(f"[dim]Generating fixes for {len(result.findings)} findings...[/dim]")
+                    for finding in result.findings:
+                        try:
+                            generated_fix = claude.generate_fix(finding, content)
+                            if generated_fix:
+                                finding.ai_fix = generated_fix
+                        except Exception as e:
+                            logger.warning(f"Failed to generate fix for {finding.rule_id}: {e}")
+                    fix_count = sum(1 for f in result.findings if f.ai_fix)
+                    if verbose:
+                        rprint(f"[dim]Generated {fix_count} fixes[/dim]")
+                else:
+                    rprint("[yellow]Warning: ANTHROPIC_API_KEY not set, skipping fix generation[/yellow]")
+            except Exception as e:
+                rprint(f"[yellow]Warning: Fix generation failed: {e}[/yellow]")
+                logger.warning(f"Fix generation failed: {e}")
                 if verbose:
                     import traceback
                     traceback.print_exc()

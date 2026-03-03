@@ -276,13 +276,68 @@ class TestCLIIntegration:
         """Test error handling for invalid platform."""
         from typer.testing import CliRunner
         from pipelineiq.cli.main import app
-        
+
         runner = CliRunner()
         result = runner.invoke(app, [
             "analyze",
             str(FIXTURES_DIR / "simple.yaml"),
             "--platform", "invalid",
         ])
-        
+
         assert result.exit_code == 1
         assert "Invalid platform" in result.output
+
+    def test_cli_fix_flag_with_mock(self):
+        """Test --fix flag generates and displays fixes."""
+        from unittest.mock import patch, Mock
+        from typer.testing import CliRunner
+        from pipelineiq.cli.main import app
+
+        runner = CliRunner()
+
+        # Mock ClaudeService to return a fix
+        with patch("pipelineiq.ai.ClaudeService") as mock_claude_class:
+            mock_service = Mock()
+            mock_service.is_available.return_value = True
+            mock_service.generate_fix.return_value = "cache:\n  key: npm-{{ checksum 'package-lock.json' }}"
+            mock_claude_class.return_value = mock_service
+
+            result = runner.invoke(app, [
+                "analyze",
+                str(FIXTURES_DIR / "simple.yaml"),
+                "--platform", "harness",
+                "--fix",
+            ])
+
+            # Should call generate_fix for each finding
+            assert mock_service.generate_fix.call_count > 0
+            # Exit code 1 or 2 means findings found
+            assert result.exit_code in [1, 2]
+
+    def test_cli_fix_flag_json_output(self):
+        """Test --fix flag includes ai_fix in JSON output."""
+        import json
+        from unittest.mock import patch, Mock
+        from typer.testing import CliRunner
+        from pipelineiq.cli.main import app
+
+        runner = CliRunner()
+
+        with patch("pipelineiq.ai.ClaudeService") as mock_claude_class:
+            mock_service = Mock()
+            mock_service.is_available.return_value = True
+            mock_service.generate_fix.return_value = "cache:\n  enabled: true"
+            mock_claude_class.return_value = mock_service
+
+            result = runner.invoke(app, [
+                "analyze",
+                str(FIXTURES_DIR / "simple.yaml"),
+                "--platform", "harness",
+                "--fix",
+                "--format", "json",
+            ])
+
+            data = json.loads(result.output)
+            # At least one finding should have ai_fix
+            findings_with_fix = [f for f in data["findings"] if f.get("ai_fix")]
+            assert len(findings_with_fix) > 0

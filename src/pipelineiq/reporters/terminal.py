@@ -43,7 +43,11 @@ class TerminalReporter:
         # Findings
         if result.findings:
             self._render_findings(result)
-        
+
+        # AI Fixes
+        if any(f.ai_fix for f in result.findings):
+            self._render_ai_fixes(result)
+
         # AI Suggestions
         if result.ai_suggestions:
             self._render_ai_suggestions(result)
@@ -129,12 +133,27 @@ class TerminalReporter:
         suggestions = Text()
         for i, suggestion in enumerate(result.ai_suggestions, 1):
             suggestions.append(f"{i}. {suggestion}\n")
-        
+
         self.console.print(Panel(
             suggestions,
             title="[bold magenta]AI Suggestions[/bold magenta]",
             border_style="magenta"
         ))
+
+    def _render_ai_fixes(self, result: AnalysisResult) -> None:
+        """Render AI-generated fixes."""
+        self.console.print("\n[bold cyan]Suggested Fixes[/bold cyan]\n")
+
+        for i, finding in enumerate(result.findings, 1):
+            if finding.ai_fix:
+                location = finding.location.stage or finding.location.file
+                self.console.print(
+                    Panel(
+                        f"[dim]{finding.ai_fix}[/dim]",
+                        title=f"[bold]#{i} {finding.rule_name}[/bold] @ {location}",
+                        border_style="cyan",
+                    )
+                )
     
     def _render_critical_path(self, result: AnalysisResult) -> None:
         """Render critical path."""

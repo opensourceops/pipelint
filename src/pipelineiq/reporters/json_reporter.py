@@ -54,6 +54,7 @@ class JsonReporter:
                         "step": f.location.step,
                     },
                     "estimated_impact": f.estimated_impact,
+                    "ai_fix": f.ai_fix,
                 }
                 for f in result.findings
             ],

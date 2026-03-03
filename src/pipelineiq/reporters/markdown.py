@@ -70,6 +70,12 @@ class MarkdownReporter:
                 lines.append(f"**Suggestion:** {finding.suggestion}")
                 if finding.estimated_impact:
                     lines.append(f"**Impact:** {finding.estimated_impact}")
+                if finding.ai_fix:
+                    lines.append("")
+                    lines.append("**Suggested Fix:**")
+                    lines.append("```yaml")
+                    lines.append(finding.ai_fix)
+                    lines.append("```")
                 lines.append("")
         
         # AI Suggestions

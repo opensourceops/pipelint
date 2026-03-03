@@ -171,3 +171,35 @@ class TestClaudeService:
 
         assert fix is not None
         assert "cache" in fix.lower()
+
+    def test_finding_ai_fix_field(self):
+        """Test that Finding model supports ai_fix field."""
+        finding = Finding(
+            id="f1",
+            rule_id="cache-dependencies",
+            rule_name="Cache Dependencies",
+            severity=Severity.HIGH,
+            category=Category.CACHING,
+            message="npm install without cache",
+            suggestion="Add cache",
+            location=Location(file="test.yaml", stage="build"),
+            ai_fix="cache:\n  key: npm-{{ checksum 'package-lock.json' }}",
+        )
+
+        assert finding.ai_fix is not None
+        assert "cache" in finding.ai_fix
+
+    def test_finding_ai_fix_defaults_to_none(self):
+        """Test that ai_fix defaults to None."""
+        finding = Finding(
+            id="f1",
+            rule_id="test",
+            rule_name="Test",
+            severity=Severity.LOW,
+            category=Category.BEST_PRACTICE,
+            message="Test message",
+            suggestion="Test suggestion",
+            location=Location(file="test.yaml"),
+        )
+
+        assert finding.ai_fix is None

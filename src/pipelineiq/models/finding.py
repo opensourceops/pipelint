@@ -57,3 +57,4 @@ class Finding(BaseModel):
     fix: Optional[Fix] = None
     references: list[str] = Field(default_factory=list)
     ai_explanation: Optional[str] = None
+    ai_fix: Optional[str] = None
