@@ -375,6 +375,135 @@ class TestParallelStepsRule:
 
         assert len(findings) == 0
 
+    def test_detects_via_command_content_not_name(self, rule):
+        """Test detection via command content, not step name (mentor feedback)."""
+        # Step names don't contain keywords, but commands do
+        pipeline = Pipeline(
+            id="test",
+            name="Test",
+            platform=Platform.HARNESS,
+            file_path="test.yaml",
+            stages=[
+                Stage(
+                    id="ci",
+                    name="CI",
+                    jobs=[
+                        Job(
+                            id="job1",
+                            name="Job 1",
+                            runner=RunnerConfig(type="kubernetes"),
+                            steps=[
+                                Step(id="s1", name="Step 1", type=StepType.RUN, command="eslint src/"),
+                                Step(id="s2", name="Step 2", type=StepType.RUN, command="pytest tests/"),
+                            ],
+                        )
+                    ],
+                )
+            ],
+        )
+        dag = PipelineDAG(pipeline)
+        findings = rule.analyze(pipeline, dag)
+
+        assert len(findings) == 1
+        assert "lint" in findings[0].message.lower() or "test" in findings[0].message.lower()
+
+    def test_detects_security_tools(self, rule):
+        """Test detection of security scanning tools."""
+        pipeline = Pipeline(
+            id="test",
+            name="Test",
+            platform=Platform.HARNESS,
+            file_path="test.yaml",
+            stages=[
+                Stage(
+                    id="ci",
+                    name="CI",
+                    jobs=[
+                        Job(
+                            id="job1",
+                            name="Job 1",
+                            runner=RunnerConfig(type="kubernetes"),
+                            steps=[
+                                Step(id="s1", name="Audit", type=StepType.RUN, command="npm audit"),
+                                Step(id="s2", name="Tests", type=StepType.RUN, command="jest"),
+                            ],
+                        )
+                    ],
+                )
+            ],
+        )
+        dag = PipelineDAG(pipeline)
+        findings = rule.analyze(pipeline, dag)
+
+        assert len(findings) == 1
+        assert "security" in findings[0].message.lower() or "test" in findings[0].message.lower()
+
+    def test_no_finding_for_sequential_deps(self, rule):
+        """Test no finding for install->build (not parallelizable)."""
+        pipeline = Pipeline(
+            id="test",
+            name="Test",
+            platform=Platform.HARNESS,
+            file_path="test.yaml",
+            stages=[
+                Stage(
+                    id="ci",
+                    name="CI",
+                    jobs=[
+                        Job(
+                            id="job1",
+                            name="Job 1",
+                            runner=RunnerConfig(type="kubernetes"),
+                            steps=[
+                                Step(id="s1", name="Install", type=StepType.RUN, command="npm ci"),
+                                Step(id="s2", name="Build", type=StepType.RUN, command="npm run build"),
+                            ],
+                        )
+                    ],
+                )
+            ],
+        )
+        dag = PipelineDAG(pipeline)
+        findings = rule.analyze(pipeline, dag)
+
+        # install and build are not in PARALLELIZABLE_CATEGORIES
+        assert len(findings) == 0
+
+    def test_detects_three_parallelizable_steps(self, rule):
+        """Test detection of lint + test + security as parallelizable."""
+        pipeline = Pipeline(
+            id="test",
+            name="Test",
+            platform=Platform.HARNESS,
+            file_path="test.yaml",
+            stages=[
+                Stage(
+                    id="ci",
+                    name="CI",
+                    jobs=[
+                        Job(
+                            id="job1",
+                            name="Job 1",
+                            runner=RunnerConfig(type="kubernetes"),
+                            steps=[
+                                Step(id="s1", name="Lint", type=StepType.RUN, command="ruff check ."),
+                                Step(id="s2", name="Test", type=StepType.RUN, command="pytest"),
+                                Step(id="s3", name="Security", type=StepType.RUN, command="bandit -r src/"),
+                            ],
+                        )
+                    ],
+                )
+            ],
+        )
+        dag = PipelineDAG(pipeline)
+        findings = rule.analyze(pipeline, dag)
+
+        assert len(findings) == 1
+        # All three steps should be mentioned
+        assert "Lint" in findings[0].message
+        assert "Test" in findings[0].message
+        assert "Security" in findings[0].message
+
 
 class TestAnalysisEngine:
     """Tests for AnalysisEngine."""
